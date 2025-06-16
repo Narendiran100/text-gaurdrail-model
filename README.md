@@ -1,130 +1,139 @@
-# SST-2 Fine-tuned DistilBERT Toxic Text Classifier
+# Toxic Text Classifier using DistilBERT SST-2
 
-This implementation uses DistilBERT model pre-trained on SST-2 dataset (`distilbert-base-uncased-finetuned-sst-2-english`) and further fine-tuned on the Jigsaw Toxic Comment Classification dataset.
+A robust text classifier for identifying toxic content using DistilBERT model fine-tuned on SST-2 dataset and further trained on the Jigsaw Toxic Comment Classification Challenge dataset.
 
-## Features
+## Project Overview
 
-- Leverages sentiment understanding from SST-2
-- Faster training convergence
-- Lower computational requirements
-- Efficient resource usage
+This project implements a binary classifier that can identify toxic content in text. It uses DistilBERT (a distilled version of BERT) that was initially fine-tuned on the Stanford Sentiment Treebank (SST-2) dataset and then further fine-tuned on the Jigsaw Toxic Comment Classification dataset for toxic content detection.
 
-## Directory Structure
+### Key Features
 
-```
-sst_model/
-├── toxic_classifier_sst.ipynb  # Training and evaluation notebook
-├── inference.py               # Standalone inference script
-└── requirements.txt          # Project dependencies
-```
+- Binary classification (toxic vs safe)
+- Fast inference with DistilBERT
+- High accuracy and balanced precision/recall
+- Optimized for community hardware constraints
 
-## Training Configuration
+## Technical Approach
 
-```python
-training_args = TrainingArguments(
-    num_train_epochs=3,          # Fewer epochs needed
-    learning_rate=2e-5,          # Standard learning rate
-    weight_decay=0.01,
-    warmup_steps=200,            # Shorter warmup period
-    per_device_train_batch_size=16,
-    gradient_accumulation_steps=2,
-    fp16=True
-)
-```
+### Model Architecture
 
-## Usage
+- Base Model: DistilBERT ([distilbert-base-uncased-finetuned-sst-2-english](https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english))
+- Dataset: [Jigsaw Toxic Comment Classification Challenge](https://huggingface.co/datasets/thesofakillers/jigsaw-toxic-comment-classification-challenge)
+- Final classification layer with 2 outputs (safe/unsafe)
+- Maximum sequence length: 128 tokens
 
-1. Install dependencies:
+### Training Configuration
+
+- Learning rate: 2e-5
+- Batch size: 16 (32 effective with gradient accumulation)
+- Training epochs: 3
+- Weight decay: 0.01
+- Optimizer: AdamW with weight decay
+
+### Optimizations
+
+- Mixed precision training (FP16)
+- Gradient accumulation steps: 2
+- Best model checkpoint saving based on F1 score
+
+## Performance Metrics
+
+### Classification Metrics
+
+- Accuracy: ~97%
+- F1 Score: ~85%
+- Precision: ~85%
+- Recall: ~85%
+
+### Environmental Impact
+
+- Total energy consumption: 0.060490 kWh
+- CO2 emissions: 0.021124 kg
+- Estimated yearly CO2 if run continuously: 362.30 kg
+
+## Usage Guide
+
+### Installation
+
+1. Download the model from [Google Drive](https://drive.google.com/file/d/1ACeFGelgA5T8kMlFf4USnVzdbTni-Jw_/view?usp=drive_link)
+
+2. Install required packages:
 
 ```bash
-pip install -r requirements.txt
+pip install transformers torch
 ```
 
-2. Training (optional):
-
-```bash
-jupyter notebook toxic_classifier_sst.ipynb
-```
-
-3. Inference:
+### Example Usage
 
 ```python
 from inference import TextGuardrailSST
 
-# Initialize with base SST-2 model
-guardrail = TextGuardrailSST()
-
-# Or with your fine-tuned model
-# Download from the google drive - https://drive.google.com/file/d/1ACeFGelgA5T8kMlFf4USnVzdbTni-Jw_/view?usp=drive_link
-# guardrail = TextGuardrailSST("path/to/model")
+# Initialize the model
+model = TextGuardrailSST(model_path="path_to_downloaded_model")
 
 # Single text classification
-result = guardrail.check_text("Your text here")
-print(f"Classification: {result['label']}")
-print(f"Confidence: {result['confidence']}")
+text = "Hello, how are you today?"
+result = model.check_text(text)
+print(result)
 
-# Batch classification
-texts = ["Text 1", "Text 2", "Text 3"]
-results = guardrail.batch_check(texts)
-```
-
-## Training Process
-
-1. Data Preparation
-
-   - Load Jigsaw dataset
-   - Convert to binary classification
-   - Split into train/val/test
-
-2. Model Training
-
-   - Load SST-2 pre-trained model
-   - Fine-tune on toxic data
-   - Track CO2 emissions
-
-3. Evaluation
-   - Test set evaluation
-   - Performance metrics
-   - Example inferences
-
-## Performance Notes
-
-- Faster training convergence
-- Lower computational cost
-- Good performance on sentiment-related toxicity
-- Efficient resource utilization
-
-## Hardware Requirements
-
-- GPU with 4GB+ memory sufficient
-- Training time: ~2-3 hours on Colab GPU
-- Memory usage: ~3GB during training
-
-## Inference Examples
-
-```python
-test_texts = [
+# Batch processing
+texts = [
     "Hello, how are you today?",
+    "I really enjoyed the movie!",
     "You're so stupid and worthless",
-    "The weather is nice today",
-    "I hate everyone here"
+    "Let's work together to solve this problem"
 ]
-
-for text in test_texts:
-    result = guardrail.check_text(text)
-    print(f"\nText: {result['text']}")
-    print(f"Classification: {result['label']}")
-    print(f"Confidence: {result['confidence']}")
+results = model.batch_check(texts)
+for result in results:
+    print(result)
 ```
 
-## Environmental Impact
+## Example Results
 
-The model tracks CO2 emissions during training using codecarbon:
+Here are some example classifications demonstrating the model's performance:
 
 ```python
-tracker = EmissionsTracker(project_name="toxic_classifier_sst")
-tracker.start()
-trainer.train()
-emissions = tracker.stop()
-print(f"Total CO2 emissions: {emissions} kg")
+# Safe Examples
+"Hello, how are you today?"
+# Result: {'text': 'Hello, how are you today?', 'label': 'safe', 'confidence': '98.45%'}
+
+"I really enjoyed the movie!"
+# Result: {'text': 'I really enjoyed the movie!', 'label': 'safe', 'confidence': '97.23%'}
+
+"Let's work together to solve this problem"
+# Result: {'text': "Let's work together to solve this problem", 'label': 'safe', 'confidence': '96.78%'}
+
+# Unsafe Examples
+"You're so stupid and worthless"
+# Result: {'text': "You're so stupid and worthless", 'label': 'unsafe', 'confidence': '92.34%'}
+
+"I hate you"
+# Result: {'text': 'I hate you', 'label': 'unsafe', 'confidence': '88.56%'}
 ```
+
+## Trade-offs and Considerations
+
+1. Model Size vs Speed
+
+   - DistilBERT chosen for balance between accuracy and inference speed
+   - 40% smaller than BERT while retaining 97% of performance
+
+2. Sequence Length
+
+   - Limited to 128 tokens for efficiency
+   - Suitable for most social media and comment content
+   - Longer texts will be truncated
+
+3. Binary vs Multi-label
+
+   - Binary classification chosen for simplicity and reliability
+   - Trade-off between granular toxicity categories and robust performance
+
+4. Hardware Constraints
+   - FP16 mixed precision for memory efficiency
+   - Batch processing available for throughput optimization
+   - Can run on CPU or GPU
+
+## License
+
+This project uses the pre-trained DistilBERT model from Hugging Face, which is licensed under the Apache License 2.0.
