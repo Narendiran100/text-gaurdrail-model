@@ -55,6 +55,7 @@ from inference import TextGuardrailSST
 guardrail = TextGuardrailSST()
 
 # Or with your fine-tuned model
+# Download from the google drive - https://drive.google.com/file/d/1ACeFGelgA5T8kMlFf4USnVzdbTni-Jw_/view?usp=drive_link
 # guardrail = TextGuardrailSST("path/to/model")
 
 # Single text classification
