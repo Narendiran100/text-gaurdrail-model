@@ -133,7 +133,18 @@ Here are some example classifications demonstrating the model's performance:
    - FP16 mixed precision for memory efficiency
    - Batch processing available for throughput optimization
    - Can run on CPU or GPU
+     
+# Real-Time System Integration
 
-## License
+## Overview
+This text classifier serves as a content filtering API that screens prompts for hate speech and harmful content before they reach the main AI assistant. We can deploy the model as API service
 
-This project uses the pre-trained DistilBERT model from Hugging Face, which is licensed under the Apache License 2.0.
+## System Flow
+```mermaid
+graph LR
+    User[User] --> API[API Gateway]
+    API --> Guard[Guardrail Service]
+    Guard --> Check{Safety Check}
+    Check -->|Safe| LLM[AI Assistant]
+    Check -->|Unsafe| Reject[Reject Request]
+
